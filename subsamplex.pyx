@@ -2,9 +2,9 @@ import numpy as np
 cimport numpy as np
 
 cdef inline int int_min(int a, int b): return a if a <= b else b
-ctypedef np.double_t DTYPE_t
+ctypedef np.int_t DTYPE_t
 
-def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int stepsize=131072):
+def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int stepsize=(2**20)):
     '''
     Subsample counts data
 
@@ -26,7 +26,8 @@ def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int
     sampled : ndarray
         Histogram of same size as input ``counts`` array.
     '''
-    cdef int acc, nexts, i, di
+    cdef int nexts, i, step
+    cdef DTYPE_t acc, di
     cdef np.ndarray[np.int_t, ndim=1] sampled
     cdef np.ndarray[DTYPE_t, ndim=1] new
     if copy_data:
@@ -34,7 +35,6 @@ def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int
     if N > counts.sum():
         raise ValueError("Trying to subsample {} from an array with {} elements.".format(N, counts.sum()))
     new = np.zeros_like(counts)
-
     while N > 0:
         step = int_min(stepsize, N)
         N -= step
@@ -42,14 +42,14 @@ def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int
         sampled.sort()
         acc = 0
         nexts = 0
-        for i,di in enumerate(counts):
-            acc += di
+        for i in range(len(counts)):
+            acc += counts[i]
             while sampled[nexts] <= acc:
                 nexts += 1
                 new[i] += 1
                 counts[i] -= 1
-                if nexts == len(sampled):
+                if nexts == step:
                     break
-            if nexts == len(sampled):
+            if nexts == step:
                 break
     return new
