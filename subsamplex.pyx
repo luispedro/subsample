@@ -1,6 +1,10 @@
 import numpy as np
+cimport numpy as np
 
-def subsample(counts, N, copy_data=True, stepsize=131072):
+cdef inline int int_min(int a, int b): return a if a <= b else b
+ctypedef np.double_t DTYPE_t
+
+def subsample(np.ndarray[DTYPE_t, ndim=1] counts, int N, int copy_data=True, int stepsize=131072):
     '''
     Subsample counts data
 
@@ -22,6 +26,9 @@ def subsample(counts, N, copy_data=True, stepsize=131072):
     sampled : ndarray
         Histogram of same size as input ``counts`` array.
     '''
+    cdef int acc, nexts, i, di
+    cdef np.ndarray[np.int_t, ndim=1] sampled
+    cdef np.ndarray[DTYPE_t, ndim=1] new
     if copy_data:
         counts = counts.copy()
     if N > counts.sum():
@@ -29,9 +36,9 @@ def subsample(counts, N, copy_data=True, stepsize=131072):
     new = np.zeros_like(counts)
 
     while N > 0:
-        step = min(stepsize, N)
+        step = int_min(stepsize, N)
         N -= step
-        sampled = np.random.randint(0, counts.sum(), size=step)
+        sampled = np.random.randint(0, counts.sum(), size=step, dtype=np.int)
         sampled.sort()
         acc = 0
         nexts = 0
